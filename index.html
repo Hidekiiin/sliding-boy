@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Subway Surfers Clone</title>
+  <title>Subway Surfers Clone Ver 2.0</title>
   <style>
     body {
       margin: 0;
@@ -37,11 +37,11 @@
     // ゲーム変数
     let player;
     let obstacles = [];
-    let gameSpeed = 5;
+    let gameSpeed = 8;
     let gravity = 0.5;
     let score = 0;
-    let isJumping = false;
     let gameOver = false;
+    let jumpPower = -12;
 
     // プレイヤークラス
     class Player {
@@ -49,10 +49,10 @@
         this.width = 50;
         this.height = 50;
         this.x = 100;
-        this.y = canvas.height - this.height - 50;
+        this.y = canvas.height - this.height - 80;
         this.dy = 0;
-        this.jumpStrength = -12;
         this.grounded = true;
+        this.jumpPower = jumpPower;
       }
 
       draw() {
@@ -62,7 +62,7 @@
 
       jump() {
         if (this.grounded) {
-          this.dy = this.jumpStrength;
+          this.dy = this.jumpPower;
           this.grounded = false;
         }
       }
@@ -71,8 +71,8 @@
         this.y += this.dy;
         this.dy += gravity;
 
-        if (this.y > canvas.height - this.height - 50) {
-          this.y = canvas.height - this.height - 50;
+        if (this.y > canvas.height - this.height - 80) {
+          this.y = canvas.height - this.height - 80;
           this.grounded = true;
         }
       }
@@ -80,17 +80,22 @@
 
     // 障害物クラス
     class Obstacle {
-      constructor(x, width, height, color) {
+      constructor(x, width, height, type) {
         this.x = x;
-        this.y = canvas.height - height - 50;
+        this.y = canvas.height - height - 80;
         this.width = width;
         this.height = height;
-        this.color = color;
+        this.type = type; // タイプに応じて描画
       }
 
       draw() {
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
+        if (this.type === 'train') {
+          drawTrain(this.x, this.y, this.width, this.height);
+        } else if (this.type === 'bus') {
+          drawBus(this.x, this.y, this.width, this.height);
+        } else if (this.type === 'truck') {
+          drawTruck(this.x, this.y, this.width, this.height);
+        }
       }
 
       update() {
@@ -98,25 +103,50 @@
       }
     }
 
-    // 初期化
+    // 🚆 電車の描画
+    function drawTrain(x, y, width, height) {
+      ctx.fillStyle = '#4B0082';
+      ctx.fillRect(x, y, width, height);
+      ctx.fillStyle = '#FFF';
+      ctx.fillRect(x + 10, y + 10, width - 20, height / 2);
+    }
+
+    // 🚌 バスの描画
+    function drawBus(x, y, width, height) {
+      ctx.fillStyle = '#FFA500';
+      ctx.fillRect(x, y, width, height);
+      ctx.fillStyle = '#FFF';
+      ctx.fillRect(x + 10, y + 10, width - 20, height / 2);
+    }
+
+    // 🚚 トラックの描画
+    function drawTruck(x, y, width, height) {
+      ctx.fillStyle = '#008B8B';
+      ctx.fillRect(x, y, width, height);
+      ctx.fillStyle = '#FFF';
+      ctx.fillRect(x + 10, y + 10, width - 20, height / 2);
+    }
+
+    // ゲーム初期化
     function init() {
       player = new Player();
       obstacles = [];
       score = 0;
       gameOver = false;
-      gameSpeed = 5;
+      gameSpeed = 8;
       spawnObstacle();
     }
 
     // 障害物生成
     function spawnObstacle() {
-      const obstacleWidth = Math.random() * 40 + 30;
-      const obstacleHeight = Math.random() * 50 + 50;
-      const obstacleColor = '#8B0000';
-      obstacles.push(new Obstacle(canvas.width, obstacleWidth, obstacleHeight, obstacleColor));
+      const obstacleTypes = ['train', 'bus', 'truck'];
+      const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+      const obstacleWidth = Math.random() * 50 + 100;
+      const obstacleHeight = 60;
+      obstacles.push(new Obstacle(canvas.width, obstacleWidth, obstacleHeight, type));
 
       if (!gameOver) {
-        setTimeout(spawnObstacle, Math.random() * 1500 + 1000);
+        setTimeout(spawnObstacle, Math.random() * 1200 + 800);
       }
     }
 
@@ -162,6 +192,7 @@
         obstacles[i].update();
         obstacles[i].draw();
 
+        // 画面外の障害物削除
         if (obstacles[i].x + obstacles[i].width < 0) {
           obstacles.splice(i, 1);
           score += 10;
