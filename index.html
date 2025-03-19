@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Subway Surfers Clone</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      background-color: #87CEEB;
+    }
+    #score {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255, 255, 255, 0.8);
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-family: Arial, sans-serif;
+      font-size: 18px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+  <div id="score">🏃 スコア: 0</div>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // ゲーム変数
+    let player;
+    let obstacles = [];
+    let gameSpeed = 5;
+    let gravity = 0.5;
+    let score = 0;
+    let isJumping = false;
+    let gameOver = false;
+
+    // プレイヤークラス
+    class Player {
+      constructor() {
+        this.width = 50;
+        this.height = 50;
+        this.x = 100;
+        this.y = canvas.height - this.height - 50;
+        this.dy = 0;
+        this.jumpStrength = -12;
+        this.grounded = true;
+      }
+
+      draw() {
+        ctx.fillStyle = '#ff4d4d';
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+      }
+
+      jump() {
+        if (this.grounded) {
+          this.dy = this.jumpStrength;
+          this.grounded = false;
+        }
+      }
+
+      update() {
+        this.y += this.dy;
+        this.dy += gravity;
+
+        if (this.y > canvas.height - this.height - 50) {
+          this.y = canvas.height - this.height - 50;
+          this.grounded = true;
+        }
+      }
+    }
+
+    // 障害物クラス
+    class Obstacle {
+      constructor(x, width, height, color) {
+        this.x = x;
+        this.y = canvas.height - height - 50;
+        this.width = width;
+        this.height = height;
+        this.color = color;
+      }
+
+      draw() {
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+      }
+
+      update() {
+        this.x -= gameSpeed;
+      }
+    }
+
+    // 初期化
+    function init() {
+      player = new Player();
+      obstacles = [];
+      score = 0;
+      gameOver = false;
+      gameSpeed = 5;
+      spawnObstacle();
+    }
+
+    // 障害物生成
+    function spawnObstacle() {
+      const obstacleWidth = Math.random() * 40 + 30;
+      const obstacleHeight = Math.random() * 50 + 50;
+      const obstacleColor = '#8B0000';
+      obstacles.push(new Obstacle(canvas.width, obstacleWidth, obstacleHeight, obstacleColor));
+
+      if (!gameOver) {
+        setTimeout(spawnObstacle, Math.random() * 1500 + 1000);
+      }
+    }
+
+    // 衝突判定
+    function checkCollision(player, obstacle) {
+      return (
+        player.x < obstacle.x + obstacle.width &&
+        player.x + player.width > obstacle.x &&
+        player.y < obstacle.y + obstacle.height &&
+        player.y + player.height > obstacle.y
+      );
+    }
+
+    // キーボード入力処理
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space' && !gameOver) {
+        player.jump();
+      } else if (e.code === 'Enter' && gameOver) {
+        init(); // ゲームリスタート
+      }
+    });
+
+    // ゲームループ
+    function gameLoop() {
+      if (gameOver) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff';
+        ctx.font = '30px Arial';
+        ctx.fillText('💀 ゲームオーバー 💀', canvas.width / 2 - 120, canvas.height / 2 - 20);
+        ctx.fillText('⏩ Enterキーで再スタート', canvas.width / 2 - 160, canvas.height / 2 + 40);
+        return;
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // プレイヤー更新 & 描画
+      player.update();
+      player.draw();
+
+      // 障害物更新 & 描画
+      for (let i = obstacles.length - 1; i >= 0; i--) {
+        obstacles[i].update();
+        obstacles[i].draw();
+
+        if (obstacles[i].x + obstacles[i].width < 0) {
+          obstacles.splice(i, 1);
+          score += 10;
+          document.getElementById('score').innerText = `🏃 スコア: ${score}`;
+        }
+
+        // 衝突判定
+        if (checkCollision(player, obstacles[i])) {
+          gameOver = true;
+        }
+      }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // ゲーム開始
+    init();
+    gameLoop();
+  </script>
+</body>
+</html>
